@@ -1,138 +1,1184 @@
-<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<title>vr-vb</title>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-		<!-- Origin Trial Token, feature = WebVR (For Chrome M62+), origin = https://threejs.org, expires = 2017-12-16 -->
-		<meta http-equiv="origin-trial" data-feature="WebVR (For Chrome M62+)" data-expires="2017-12-16" content="AvEXeg7kY84HQ60ApBlqf6zPqClJwEy499YltannXHd+qIIN8ibQQFbHDkKL/Na/L7ha4VOqsjsGHhFpI6HYfgAAAABQeyJvcmlnaW4iOiJodHRwczovL3RocmVlanMub3JnOjQ0MyIsImZlYXR1cmUiOiJXZWJWUjEuMU02MiIsImV4cGlyeSI6MTUxMzQ0NjE5Nn0=">
-		<style>
-			body {
-				font-family: Monospace;
-				background-color: #101010;
-				color: #fff;
-				margin: 0px;
-				overflow: hidden;
-			}
-			a {
-				color: #f00;
-			}
-		</style>
-	</head>
-	<body>
+<head>
+	<title>VR</title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+	<style>
+		body {
+			font-family: Monospace;
+			background-color: #101010;
+			color: #fff;
+			margin: 0px;
+			overflow: hidden;
+		}
+		a {
+			color: #f00;
+		}
+	</style>
+</head>
 
-		<script src="js/three.js"></script>
+<body>
 
-		<script src="js/WebVR.js"></script>
 
-		<script>
 
-			var clock = new THREE.Clock();
+<!-- THREE library, controls and effects -->
+<!-- <script src="./js/lib/three.js"></script> -->
+<script src="./pointCloud/three.js"></script>
 
-			var container;
-			var camera, scene, raycaster, renderer;
+<script src="./pointCloud/Tween.js"></script>
 
-			var room;
-			var isMouseDown = false;
+<script src="./js/VRControls.js"></script>
+<script src="./js/VREffect.js"></script>
+<script src="./js/WebVR.js"></script>
 
-			var INTERSECTED;
-			var crosshair;
 
-			init();
-			animate();
+<!-- A simple gaze interaction manager for VR -->
+<script src="./gazeLib/reticulum.js"></script>
 
-			function init() {
+<!-- <script src="./threejs/CurveExtras.js"></script> -->
+<script src="./threejs/dat.gui.min.js"></script>
+<script src="./threejs/buildingsModels.js"></script>
+<script src="./threejs/percentagesObj.js"></script>
+<!-- <script src="./threejs/OrbitControls.js"></script> -->
 
-				container = document.createElement( 'div' );
-				document.body.appendChild( container );
+<script src="./pointCloud/SkyShader.js"></script>
+<!-- <script src="./pointCloud/dat.gui.min.js"></script> -->
+<script src="./pointCloud/Mysky.js"></script>
 
-				var info = document.createElement( 'div' );
-				info.style.position = 'absolute';
-				info.style.top = '10px';
-				info.style.width = '100%';
-				info.style.textAlign = 'center';
-				info.innerHTML = ' vr test vicksbiz';
-				container.appendChild( info );
+<script src="./threejs/Detector.js"></script>
+<!-- <script src="./threejs/initRenderedScene.js"></script> -->
 
-				scene = new THREE.Scene();
-				scene.background = new THREE.Color( 0x505050 );
+<script src="./pointCloud/TweenMax.min.js"></script>
+<script src="./pointCloud/bas.js"></script>
+<script src="./pointCloud/root.js"></script>
+<script src="./pointCloud/scene.js"></script>
+<script src="./pointCloud/scene02.js"></script>
+<script src="./pointCloud/scene03.js"></script>
 
-				camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.1, 10 );
-				scene.add( camera );
+<script>
 
-				crosshair = new THREE.Mesh(
-					new THREE.RingGeometry( 0.02, 0.04, 32 ),
-					new THREE.MeshBasicMaterial( {
-						color: 0xffffff,
-						opacity: 0.5,
-						transparent: true
-					} )
-				);
-				crosshair.position.z = - 2;
-				camera.add( crosshair );
+if ( WEBVR.isAvailable() === false ) {
 
-				room = new THREE.Mesh(
-					new THREE.BoxGeometry( 6, 6, 6, 8, 8, 8 ),
-					new THREE.MeshBasicMaterial( { color: 0x404040, wireframe: true } )
-				);
-				scene.add( room );
+	document.body.appendChild( WEBVR.getMessage() );
 
-				scene.add( new THREE.HemisphereLight( 0x606060, 0x404040 ) );
+}
+init();
+animate();
 
-				var light = new THREE.DirectionalLight( 0xffffff );
-				light.position.set( 1, 1, 1 ).normalize();
-				scene.add( light );
 
-				var geometry = new THREE.BoxGeometry( 0.15, 0.15, 0.15 );
+  var dolly;
+  var pos;
 
-				for ( var i = 0; i < 200; i ++ ) {
+var container;
+  var scene, renderer, camera, effect, controls;
 
-					var object = new THREE.Mesh( geometry, new THREE.MeshLambertMaterial( { color: Math.random() * 0xffffff } ) );
+  //effect.setSize( window.innerWidth, window.innerHeight );
+  //var manager = new WebVRManager( renderer, effect, { hideButton: false, isUndistorted: false } );
 
-					object.position.x = Math.random() * 4 - 2;
-					object.position.y = Math.random() * 4 - 2;
-					object.position.z = Math.random() * 4 - 2;
+  var cube00;
+  var cube0;
+  var cube2;
+  var cube003;
+  var cubeStart;
 
-					object.rotation.x = Math.random() * 2 * Math.PI;
-					object.rotation.y = Math.random() * 2 * Math.PI;
-					object.rotation.z = Math.random() * 2 * Math.PI;
+  var lightInstractions;
+  var lightRingOrbit;
+  var b_IntsatiateData;
+  var b_IntsatiateData02;
 
-					object.scale.x = Math.random() + 0.5;
-					object.scale.y = Math.random() + 0.5;
-					object.scale.z = Math.random() + 0.5;
+  var sound3Into;
+  var sound4BigCam;
+  var video;
+  var meshVideo;
+  var textureVideo;
+  var sphereStart;
+  var dataRing;
 
-					object.userData.velocity = new THREE.Vector3();
-					object.userData.velocity.x = Math.random() * 0.01 - 0.005;
-					object.userData.velocity.y = Math.random() * 0.01 - 0.005;
-					object.userData.velocity.z = Math.random() * 0.01 - 0.005;
+var b_firstTime = true;
 
-					room.add( object );
 
-				}
+  /////////////////////   SOUND
+       var material1, material2, material3;
+       var sphere = new THREE.SphereGeometry( 0.1, 32, 16 );
+       var listener;
 
-				raycaster = new THREE.Raycaster();
 
-				renderer = new THREE.WebGLRenderer( { antialias: true } );
-				renderer.setPixelRatio( window.devicePixelRatio );
-				renderer.setSize( window.innerWidth, window.innerHeight );
-				renderer.vr.enabled = true;
-				container.appendChild( renderer.domElement );
+      material1 = new THREE.MeshPhongMaterial( { color: 0xffaa00, shading: THREE.FlatShading, shininess: 0 } );
+      material2 = new THREE.MeshPhongMaterial( { color: 0xff2200, shading: THREE.FlatShading, shininess: 0 } );
+      material3 = new THREE.MeshPhongMaterial( { color: 0x6622aa, shading: THREE.FlatShading, shininess: 0 } );
 
-				renderer.domElement.addEventListener( 'mousedown', onMouseDown, false );
-				renderer.domElement.addEventListener( 'mouseup', onMouseUp, false );
-				renderer.domElement.addEventListener( 'touchstart', onMouseDown, false );
-				renderer.domElement.addEventListener( 'touchend', onMouseUp, false );
 
-				window.addEventListener( 'resize', onWindowResize, false );
+function init(){
 
-				//
+	// renderer = new THREE.WebGLRenderer( { antialias: true} );
+	// renderer.setClearColor( 0x2a3543 );
+	// renderer.setPixelRatio( window.devicePixelRatio );
+	// document.body.appendChild( renderer.domElement );
 
-				window.addEventListener( 'vrdisplaypointerrestricted', onPointerRestricted, false );
-				window.addEventListener( 'vrdisplaypointerunrestricted', onPointerUnrestricted, false );
+	renderer = new THREE.WebGLRenderer( { antialias: true } );
+	renderer.setClearColor( 0x505050 );
+	renderer.setPixelRatio( window.devicePixelRatio );
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	renderer.sortObjects = false;
+	document.body.appendChild( renderer.domElement );
 
-				document.body.appendChild( WEBVR.createButton( renderer ) );
+	camera = new THREE.PerspectiveCamera( 60, window.innerWidth / window.innerHeight, 0.05, 2000000 );
+	controls = new THREE.VRControls( camera );
+	//controls.standing = true;
+	effect = new THREE.VREffect( renderer );
+ scene = new THREE.Scene();
+ listener = new THREE.AudioListener();
 
-			}
+skyShader.renderSky(scene, 0.97, 0.2686);
+
+  camera.add( listener );
+
+	 video = document.createElement( 'video' );
+
+	if ( navigator.getVRDisplays ) {
+
+		navigator.getVRDisplays()
+			.then( function ( displays ) {
+				effect.setVRDisplay( displays[ 0 ] );
+				controls.setVRDisplay( displays[ 0 ] );
+			} )
+			.catch( function () {
+				// no displays
+			} );
+		document.body.appendChild( WEBVR.getButton( effect ) );
+		}
+    var urlOrbit = "./models/jsonModels/modelOrbit003.json";
+    var urlStadium = "./models/jsonModels/modelStadium003.json";
+    var urlLinesOlypmPark = "./models/jsonModels/sceneLinesOlympicPark_08.json";
+    var urlaquarium = "./models/jsonModels/modelAquarium003.json";
+
+    buildingsLoad.initModels(urlLinesOlypmPark, urlStadium, urlOrbit, urlaquarium, scene);
+
+
+      Reticulum.init(camera, {
+      	proximity: false,
+      	clickevents: true,
+      	reticle: {
+      		visible: true,
+      		restPoint: 350, //Defines the reticle's resting point when no object has been targeted
+      		//color: 0xfdc300,//yellow
+          //color: 0x2daa56, //green color palleat
+          color: 0xffffff, //
+      		innerRadius: 0.0001,
+      		outerRadius: 0.007,
+      		hover: {
+      			color: 0xcccccc,
+      			innerRadius: 0.02,
+      			outerRadius: 0.027,
+      			speed: 5,
+      			vibrate: 50 //Set to 0 or [] to disable
+      		}
+      	},
+      	fuse: {
+      		visible: false,
+      		duration: 2.5,
+      		color: 0xcdcdcd,
+      		innerRadius: 0.045,
+      		outerRadius: 0.06,
+      		vibrate: 0, //Set to 0 or [] to disable
+      		clickCancelFuse: false //If users clicks on targeted object fuse is canceled
+      	}
+      });
+
+    var cubeMaterials = [
+          new THREE.MeshBasicMaterial({map: THREE.ImageUtils.loadTexture('assets/images/new-logoSolid01.png'), transparent:true, opacity:0.99 }),
+          new THREE.MeshBasicMaterial({map: THREE.ImageUtils.loadTexture('assets/images/new-logoSolid01.png'), transparent:true, opacity:0.99 }),
+          new THREE.MeshBasicMaterial({color:0xf6f6f6, transparent:true, opacity:0.6, side: THREE.DoubleSide}),
+          new THREE.MeshBasicMaterial({map: THREE.ImageUtils.loadTexture('assets/images/new-logoSolid01.png'), transparent:true, opacity:0.99 }),
+          new THREE.MeshBasicMaterial({color:0xf6f6f6, transparent:true, opacity:0.6, side: THREE.DoubleSide}),
+          new THREE.MeshBasicMaterial({color:0xf6f6f6, transparent:true, opacity:0.6, side: THREE.DoubleSide})
+    ];
+
+		dolly = new THREE.Group();
+ 	 dolly.position.x = -6;
+ 	 dolly.position.y = 1.8;
+ 	 dolly.position.z = 9;
+ 	 dolly.rotation.y = 5;
+		//  camera.position.x = -6;
+    //  camera.position.y = 0.8;
+    //  camera.position.z = 9;
+    //  camera.rotation.y = 5;
+
+     scene.add( dolly );
+     dolly.add( camera );
+
+     addMeshStart();
+		 //sound();
+
+
+     var geometrySphereStart = new THREE.SphereGeometry( 700, 32, 32 );
+     var materialSphereStart = new THREE.MeshBasicMaterial({map: THREE.ImageUtils.loadTexture('assets/images/black.png'), side: THREE.DoubleSide, transparent:true, opacity:0.4 });
+
+     sphereStart = new THREE.Mesh( geometrySphereStart, materialSphereStart);
+     sphereStart.position.x = 0;
+     sphereStart.position.y = 0;
+     sphereStart.position.z = 6.5;
+     scene.add( sphereStart );
+      // CUBE
+  var geometryLogo = new THREE.CubeGeometry(0.5,1,4);
+		var logoCubeMaterial = new THREE.MeshFaceMaterial(cubeMaterials);
+
+  var logoCube = new THREE.Mesh(geometryLogo, logoCubeMaterial);
+  logoCube.scale.set(0.065, 0.065, 0.065);
+  logoCube.position.set(-3.3, 0.59, 6.8);
+  logoCube.rotation.set(0, 0.6, 0);
+  scene.add(logoCube);
+
+
+
+	var ccc3 = new THREE.Mesh( new THREE.CubeGeometry(0.5,1,4), logoCubeMaterial );
+	ccc3.scale.set(0.065, 0.065, 0.065);
+	ccc3.rotation.set(0, 1.8, 0);
+	ccc3.position.x = -1;
+	ccc3.position.y = 0.6;
+	ccc3.position.z = 5;
+	scene.add( ccc3 );
+
+	// create the Cube
+	var ccc = new THREE.Mesh( new THREE.CubeGeometry(0.5,1,4), logoCubeMaterial );
+	ccc.scale.set(0.065, 0.065, 0.065);
+	ccc.rotation.set(0, 0.5, 0);
+	ccc.position.x = 1.1;
+	ccc.position.y = 0.59;
+	ccc.position.z = 6;
+	scene.add( ccc );
+
+	var ccc1 = new THREE.Mesh( new THREE.CubeGeometry(0.5,1,4), logoCubeMaterial );
+	ccc1.scale.set(0.065, 0.065, 0.065);
+	ccc1.rotation.set(0, -0.5, 0);
+	ccc1.position.x = -1.1;
+	ccc1.position.y = 0.63;
+	ccc1.position.z = 7.7;
+
+	scene.add( ccc1 );
+
+
+	 //
+
+      light1 = new THREE.AmbientLight( 0x222222 );
+      dolly.add( light1 );
+
+      lightRingOrbit = new THREE.PointLight( 0xffffff, 1, 800.6 );
+      lightRingOrbit.position.set( -2.5, 1.2, 1.0 );
+      dolly.add( lightRingOrbit );
+
+      lightInstractions = new THREE.PointLight( 0xffffff, 0.88, 100);
+      lightInstractions.position.set( 220, -40, -190 );
+      dolly.add( lightInstractions );
+
+
+			window.addEventListener( 'mousedown', onMouseDown, false );
+			window.addEventListener( 'mouseup', onMouseUp, false );
+			window.addEventListener( 'touchstart', onMouseDown, false );
+			window.addEventListener( 'touchend', onMouseUp, false );
+			window.addEventListener( 'resize', onWindowResize, false );
+}
+
+///function sound() {
+                        var audioLoaderBigCam = new THREE.AudioLoader();
+                        var meshBigCam = new THREE.Mesh( sphere, material1 );
+                        meshBigCam.position.set( -2.5, 1, 7 );
+                        meshBigCam.visible = false;
+                        scene.add( meshBigCam );
+                        sound4BigCam = new THREE.PositionalAudio( listener );
+                        audioLoaderBigCam.load( 'sounds/DataSounds/cam02Big01.mp3', function( buffer ) {
+                          sound4BigCam.setBuffer( buffer );
+                          sound4BigCam.setRefDistance( 110 );
+                          sound4BigCam.setVolume(0.5);
+
+                        });
+                        scene.add(sound4BigCam);
+
+                        var audioLoaderData = new THREE.AudioLoader();
+                            var meshDataSound = new THREE.Mesh( sphere, material1 );
+                            meshDataSound.position.set( -2.5, 1, 7 );
+                            meshDataSound.visible = false;
+                            scene.add( meshDataSound );
+                            var soundData = new THREE.PositionalAudio( listener );
+                            audioLoaderData.load( 'sounds/DataSounds/dataSound003.mp3', function( buffer ) {
+                              soundData.setBuffer( buffer );
+                              soundData.setRefDistance( 0.7 );
+                            });
+                            meshDataSound.add( soundData );
+
+                            var audioLoaderData2 = new THREE.AudioLoader();
+                            var soundData2 = new THREE.PositionalAudio( listener );
+                            audioLoaderData2.load( 'sounds/DataSounds/dataSound003.mp3', function( buffer ) {
+                                soundData2.setBuffer( buffer );
+                                soundData2.setRefDistance( 0.7 );
+                              });
+                                meshDataSound.add( soundData2 );
+
+                                var audioLoaderData3 = new THREE.AudioLoader();
+                                var soundData3 = new THREE.PositionalAudio( listener );
+                                audioLoaderData3.load( 'sounds/DataSounds/dataSound003.mp3', function( buffer ) {
+                                    soundData3.setBuffer( buffer );
+                                    soundData3.setRefDistance( 0.7 );
+                                  });
+                                      meshDataSound.add( soundData3 );
+
+                                var audioLoaderData4 = new THREE.AudioLoader();
+                                var soundData4 = new THREE.PositionalAudio( listener );
+                                audioLoaderData4.load( 'sounds/DataSounds/dataSound003.mp3', function( buffer ) {
+                                    soundData4.setBuffer( buffer );
+                                    soundData4.setRefDistance( 0.7 );
+                                  });
+                                    meshDataSound.add( soundData4 );
+
+                                var audioLoaderData5 = new THREE.AudioLoader();
+                                var soundData5 = new THREE.PositionalAudio( listener );
+                                audioLoaderData5.load( 'sounds/DataSounds/dataSound003.mp3', function( buffer ) {
+                                    soundData5.setBuffer( buffer );
+                                    soundData5.setRefDistance( 0.7 );
+                                  });
+                                    meshDataSound.add( soundData5 );
+
+                                var audioLoaderData6 = new THREE.AudioLoader();
+                                var soundData6 = new THREE.PositionalAudio( listener );
+                                audioLoaderData6.load( 'sounds/DataSounds/dataSound003.mp3', function( buffer ) {
+                                  soundData6.setBuffer( buffer );
+                                  soundData6.setRefDistance( 0.7 );
+                                });
+                                  meshDataSound.add( soundData6 );
+
+                            var audioLoaderCam01 = new THREE.AudioLoader();
+                            var soundCam01 = new THREE.PositionalAudio( listener );
+                            var meshCam01 = new THREE.Mesh( sphere, material1 );
+                            meshCam01.position.set( -6, 0.8, 9 );
+                            meshCam01.visible = false;
+                            scene.add( meshCam01 );
+                            audioLoaderCam01.load( 'sounds/DataSounds/cam01.mp3', function( buffer ) {
+                              soundCam01.setBuffer( buffer );
+                              soundCam01.setRefDistance( 1.4 );
+
+                            });
+                            meshCam01.add( soundCam01 );
+
+                            var audioLoaderClick = new THREE.AudioLoader();
+                            var meshclick = new THREE.Mesh( sphere, material1 );
+                              meshclick.position.set( -6, 0.8, 9 );
+                              meshclick.visible = false;
+                              scene.add( meshclick );
+                            var soundClick = new THREE.PositionalAudio( listener );
+                            audioLoaderClick.load( 'sounds/DataSounds/click.mp3', function( buffer ) {
+                              soundClick.setBuffer( buffer );
+                              soundClick.setRefDistance( 0.1 );
+                              });
+                            meshclick.add(soundClick);
+//}
+
+function addMeshStart(){
+
+
+planeInstractions();
+    cubeStart = new THREE.Mesh(new THREE.TorusGeometry( 5, 0.6, 16, 60), new THREE.MeshLambertMaterial({ color: 0xfdc300 }));
+    cubeStart.position.set(250, -40, -200);
+    cubeStart.rotation.set(0, 90, 0);
+
+    var audioLoader = new THREE.AudioLoader();
+    sound3Into = new THREE.PositionalAudio( listener );
+    audioLoader.load( 'sounds/DataSounds/generalRythm02.mp3', function( buffer ) {
+      sound3Into.setBuffer( buffer );
+      sound3Into.setRefDistance( 110 );
+      sound3Into.play();
+      sound3Into.setVolume(0.0);
+      sound3Into.setLoop(true);
+
+    });
+    cubeStart.add(sound3Into);
+
+    Reticulum.add( cubeStart, {
+        onGazeOver: function(){
+
+        },
+        onGazeOut: function(){
+
+          console.log("start");
+          addMeshDataParticles();
+          soundClick.play();
+          sound3Into.setVolume(0.18);
+          Reticulum.remove(cubeStart);
+          scene.remove(cubeStart);
+          //scene.remove(sprite);
+          scene.remove(meshVideo);
+          video.pause();
+          lightClick();
+          scene.remove(lightInstractions);
+          scene.remove(sphereStart);
+          initDataToSky();
+
+      }
+    });
+      scene.add( cubeStart );
+  }
+
+
+
+function addMeshBeginAgain(){
+
+  cube003 = new THREE.Mesh(new THREE.TorusGeometry( 0.086, 0.02, 16, 60), new THREE.MeshLambertMaterial({ color: 0xfdc300 }));
+  cube003.position.set(-6, 1.1, 9);
+  cube003.rotation.set(0, 5, 0);
+
+  Reticulum.add( cube003, {
+      onGazeOver: function(){
+      },
+      onGazeOut: function(){
+        tweenCam03();
+    }
+  });
+    scene.add( cube003 );
+}
+
+function addMeshMoveToOrbit(){
+
+  cube2 = new THREE.Mesh(new THREE.TorusGeometry( 0.05, 0.009, 16, 60 ), new THREE.MeshLambertMaterial({ color: 0xfdc300 }));
+  cube2.position.set(-2.2, 1.2, 8.1);
+  cube2.rotation.set(0, 89.3, 0);
+
+         Reticulum.add( cube2, {
+             onGazeOver: function(){
+             },
+             onGazeOut: function(){
+                 soundClick.play();
+                 sound4BigCam.play();
+               tweenCamBigPath01();
+             }
+         });
+           scene.add( cube2 );
+
+}
+
+function addMeshMoveDown(){
+
+    cube0 = new THREE.Mesh(new THREE.TorusGeometry( 0.06, 0.015, 16, 60), new THREE.MeshLambertMaterial({ color: 0xfdc300 }));
+    cube0.position.set(-4.2, 1, 7.8);
+    cube0.rotation.set(90, 0, 0);
+
+           Reticulum.add( cube0, {
+               onGazeOver: function(){
+               },
+               onGazeOut: function(){
+                  tweenCam01();
+                    soundClick.play();
+             }
+           });
+             scene.add( cube0 );
+}
+
+function generateData(xPosStart, yPosStart, zPosStart, xPosEnd, yPosEnd, zPosEnd, b_IntsatiateData){
+
+  if (b_IntsatiateData) {
+
+       dataPoints.xPosStart = xPosStart;
+       dataPoints.yPosStart = yPosStart;
+       dataPoints.zPosStart = zPosStart;
+
+       dataPoints.xPosEnd = xPosEnd;
+       dataPoints.yPosEnd = yPosEnd;
+       dataPoints.zPosEnd = zPosEnd;
+
+      dataPoints.init(scene);
+      b_IntsatiateData = false;
+    }
+}
+
+function generateData02(xPosStart, yPosStart, zPosStart, xPosEnd, yPosEnd, zPosEnd, b_IntsatiateData02){
+
+    if (b_IntsatiateData02) {
+
+           dataPoints02.xPosStart = xPosStart;
+           dataPoints02.yPosStart = yPosStart;
+           dataPoints02.zPosStart = zPosStart;
+
+           dataPoints02.xPosEnd = xPosEnd;
+           dataPoints02.yPosEnd = yPosEnd;
+           dataPoints02.zPosEnd = zPosEnd;
+
+          dataPoints02.init(scene);
+          b_IntsatiateData02 = false;
+        }
+}
+
+function generateData03(xPosStart, yPosStart, zPosStart, xPosEnd, yPosEnd, zPosEnd, b_IntsatiateData03){
+
+    if (b_IntsatiateData03) {
+
+           dataPoints03.xPosStart = xPosStart;
+           dataPoints03.yPosStart = yPosStart;
+           dataPoints03.zPosStart = zPosStart;
+
+           dataPoints03.xPosEnd = xPosEnd;
+           dataPoints03.yPosEnd = yPosEnd;
+           dataPoints03.zPosEnd = zPosEnd;
+
+          dataPoints03.init(scene);
+          b_IntsatiateData03 = false;
+        }
+
+        console.log(xPosStart, yPosStart, zPosStart);
+}
+
+function addMeshDataParticles() {
+
+    var loader = new THREE.FontLoader();
+    var geometryTextGeneratData;
+
+
+    loader.load( 'fonts/helvetiker_regular.typeface.js', function ( font ) {
+
+          geometryTextGeneratData = new THREE.TextGeometry( 'data', {
+            font: font,
+            size: 1.1,
+            height: 0.001,
+            curveSegments: 17,
+            bevelEnabled: true,
+            bevelThickness: 0.12,
+            bevelSize: 0.08,
+            bevelSegments: 12
+          } );
+
+          dataRing = new THREE.Mesh(new THREE.TorusGeometry( 1, 0.15, 16, 100), new THREE.MeshLambertMaterial({ color: 0x2daa56 }));
+          dataRing.position.set( 22 , 3.9 , 2.6);
+          dataRing.rotation.set( 0 , -2, 0);
+
+          Reticulum.add( dataRing, {
+              onGazeOver: function(){
+                    clearPointCloud();
+                    clearPointCloud02();
+										clearPercentages();
+              },
+              onGazeOut: function(){
+                tweenData1();
+								tweenPercentages();
+                  soundClick.play();
+                Reticulum.remove( dataRing );
+                scene.remove( dataRing );
+
+        		  }
+            });
+            //scene.add( meshTextGenerateData );
+            scene.add(dataRing);
+  });
+}
+
+function initDataToSky(){
+  var tweenData00 = new TWEEN.Tween()
+      .onUpdate(function () {
+
+      })
+      .onComplete(function () {
+        //soundData.play();
+        dataPoints03.mulRangeStart03 = 50;
+        dataPoints03.mulRangeEnd03 = 50;
+        // generateData03(THREE.Math.randFloat(-4, -0), 0.7, THREE.Math.randFloat(5, 9), -3.3, 0.7, 5.7, true);// D1_a
+        // generateData03(THREE.Math.randFloat(-4, -0), 0.7, THREE.Math.randFloat(5, 9), -2.5, 0.7, 6.4, true);// D1_a
+        // generateData03(THREE.Math.randFloat(-4, -0), 0.7, THREE.Math.randFloat(5, 9), -2.6, 0.7, 7.87, true);// D1_a
+        // generateData03(THREE.Math.randFloat(-4, -0), 0.7, THREE.Math.randFloat(5, 9), -3.1, 0.7, 8.7, true);// D1_a
+        // generateData03(THREE.Math.randFloat(-4, -0), 0.7, THREE.Math.randFloat(5, 9), -1.1, 0.7, 6.08, true);// D1_a
+        // generateData03(THREE.Math.randFloat(-4, -0), 0.7, THREE.Math.randFloat(5, 9), -0.9, 0.7, 6.9, true);// D1_a
+        // generateData03(THREE.Math.randFloat(-4, -0), 0.7, THREE.Math.randFloat(5, 9), -0.3, 0.7, 5.1, true);// D1_a
+
+        generateData03(-3.3, 0.7, 5.7, -3.3, 0.7, 5.7, true);// D1_a
+        generateData03(-2.5, 0.7, 6.4, -2.5, 0.7, 6.4, true);// D1_a
+        generateData03(-2.6, 0.7, 7.87, -2.6, 0.7, 7.87, true);// D1_a
+        generateData03(-3.1, 0.7, 8.7, -3.1, 0.7, 8.7, true);// D1_a
+        generateData03(-1.1, 0.7, 6.08, -1.1, 0.7, 6.08, true);// D1_a
+        generateData03(-0.9, 0.7, 6.9, -0.9, 0.7, 6.9, true);// D1_a
+        generateData03(-0.3, 0.7, 5.1, -0.3, 0.7, 5.1, true);// D1_a
+    });
+
+    tweenData00.start();
+
+}
+
+
+function lunaSecondSpeech(){
+
+	meshAudioSecondSpeech = new THREE.Mesh(new THREE.TorusGeometry( 5, 0.6, 16, 60), new THREE.MeshLambertMaterial({ color: 0xfdc300 }));
+	meshAudioSecondSpeech.position.set(250, -40, -200);
+	meshAudioSecondSpeech.rotation.set(0, 90, 0);
+
+	var loaderSecondSpeech = new THREE.AudioLoader();
+	soundLuna02 = new THREE.PositionalAudio( listener );
+	loaderSecondSpeech.load( 'sounds/DataSounds/lunaSecondSpeech.mp3', function( buffer ) {
+		soundLuna02.setBuffer( buffer );
+		soundLuna02.setRefDistance( 110 );
+		soundLuna02.play();
+		soundLuna02.setVolume(1.0);
+		soundLuna02.setLoop(false);
+	});
+		meshAudioSecondSpeech.add(soundLuna02);
+
+}
+
+function tweenData1() {
+
+    var tweenData01 = new TWEEN.Tween()
+        .onUpdate(function () {
+
+        })
+        .onComplete(function () {
+          soundData.play();
+          dataPoints.mulRangeStart = 50;
+          dataPoints.mulRangeEnd = 1;
+          generateData(-3.3, 0.7, 5.7, -1.8, 0.7, 6.4, true);// D1_a
+          generateData(-2.5, 0.7, 6.4, -3.9, 0.7, 6.6, true);// D1_a
+          generateData(-2.6, 0.7, 7.87, -3.7, 0.7, 5.9, true);// D1_a
+          generateData(-3.1, 0.7, 8.7, -2.5, 0.7, 7.3, true);// D1_a
+          generateData(-1.1, 0.7, 6.08, -2.0, 0.7, 8.5, true);// D1_a
+          generateData(-0.9, 0.7, 6.9, -1.1, 0.7, 6.8, true);// D1_a
+          generateData(-0.3, 0.7, 5.1, -3.6, 0.7, 8.1, true);// D1_a
+      });
+
+      var tweenClearA_01 = new TWEEN.Tween()
+              .delay(7990)
+              .onUpdate(function () {
+              })
+              .onComplete(function () {
+                clearPointCloud();
+								 lunaSecondSpeech();
+              });
+
+        var tweenData02 = new TWEEN.Tween()
+            .delay(7000)
+            .onUpdate(function () {
+            })
+            .onComplete(function () {
+              soundData2.play();
+              dataPoints02.mulRangeStart02 = 1;
+              dataPoints02.mulRangeEnd02 = 1;
+              generateData02(-1.8, 0.7, 6.4, -3.95, 0.7, 6.74, true);// D1_a
+              generateData02(-3.9, 0.7, 6.6, -0.64, 0.7, 5.79, true);// D1_a
+              generateData02(-3.7, 0.7, 5.9, -1.82, 0.7, 4.13, true);// D1_a
+              generateData02(-2.5, 0.7, 7.3, -3.22, 0.7, 5, true);// D1_a
+              generateData02(-2.0, 0.7, 8.5, -3.37, 0.7, 8.27, true);// D1_a
+              generateData02(-1.1, 0.7, 6.8, -2.15, 0.7, 7.54, true);// D1_a
+              generateData02(-3.6, 0.7, 8.1, -2.01, 0.7, 6, true);// D1_a
+
+             });
+
+      var tweenClearB_01 = new TWEEN.Tween()
+                   .delay(13990)
+                   .onUpdate(function () {
+                   })
+                   .onComplete(function () {
+                     clearPointCloud02();
+              });
+
+        var tweenData02_a = new TWEEN.Tween()
+                 .delay(14000)
+                 .onUpdate(function () {
+                 })
+                 .onComplete(function () {
+                   soundData3.play();
+                   dataPoints.mulRangeStart = 1;
+                   dataPoints.mulRangeEnd = 1;
+                   generateData(-3.95, 0.7, 6.74, -0.3, 0.7, 8.9, true);// D1_a
+                   generateData(-0.64, 0.7, 5.79, -3.4, 0.7, 5.4, true);// D1_a
+                   generateData(-1.82, 0.7, 4.13, -1.7, 0.7, 8.0, true);// D1_a
+                   generateData(-3.22, 0.7, 5, -0.8, 0.7, 7.5, true);// D1_a
+                   generateData(-3.37, 0.7, 8.27, -2.2, 0.7, 5.3, true);// D1_a
+                   generateData(-2.15, 0.7, 7.54, -4.25, 0.7, 8.24, true);// D1_a
+                   generateData(-2.01, 0.7, 6, -3.4, 0.7, 6.5, true);// D1_a
+
+                  });
+
+          var tweenClearA_02 = new TWEEN.Tween()
+                  .delay(20990)
+                  .onUpdate(function () {
+                  })
+                  .onComplete(function () {
+                    clearPointCloud();
+                  });
+
+        var tweenData02_b = new TWEEN.Tween()
+                 .delay(21000)
+                 .onUpdate(function () {
+                 })
+                 .onComplete(function () {
+                   soundData4.play();
+                   dataPoints02.mulRangeStart02 = 1;
+                   dataPoints02.mulRangeEnd02 = 1;
+                   generateData02(-0.3, 0.7, 8.9, -2.96, 0.7, 8.27, true);// D1_a
+                   generateData02(-3.4, 0.7, 5.4, -4.1, 0.7, 6.74, true);// D1_a
+                   generateData02(-1.7, 0.7, 8.0, -2.48, 0.7, 5.16, true);// D1_a
+                   generateData02(-0.8, 0.7, 7.5, -0.13, 0.7, 7.31, true);// D1_a
+                   generateData02(-2.2, 0.7, 5.3, -1.25, 0.7, 7.74, true);// D1_a
+                   generateData02(-4.25, 0.7, 8.24, -1.09, 0.7, 7.9, true);// D1_a
+                   generateData02(-3.4, 0.7, 6.5, -3.3, 0.7, 8.6, true);// D1_a
+                  });
+
+          var tweenClearB_02 = new TWEEN.Tween()
+                  .delay(27990)
+                  .onUpdate(function () {
+                  })
+                  .onComplete(function () {
+                    clearPointCloud02();
+                  });
+
+        var tweenData02_c = new TWEEN.Tween()
+                 .delay(28000)
+                 .onUpdate(function () {
+                 })
+                 .onComplete(function () {
+                   soundData5.play();
+                   dataPoints.mulRangeStart = 1;
+                   dataPoints.mulRangeEnd = 1;
+                   generateData(-2.96, 0.7, 8.27, -1.32, 0.7, 6.01, true);// D1_a
+                   generateData(-4.1, 0.7, 6.74, -3.80, 0.7, 8.73, true);// D1_a
+                   generateData(-2.48, 0.7, 5.16, -4.0, 0.7, 6.04, true);// D1_a
+                   generateData(-0.13, 0.7, 7.31, -3.63, 0.7, 7.56, true);// D1_a
+                   generateData(-1.25, 0.7, 7.74, -2.03, 0.7, 7.63, true);// D1_a
+                   generateData(-1.09, 0.7, 7.9, -1.11, 0.7, 6.7, true);// D1_a
+                   generateData(-3.3, 0.7, 8.6, -3.3, 0.7, 8.6, true);// D1_a
+                  });
+
+        var tweenClearA_03 = new TWEEN.Tween()
+                .delay(34990)
+                .onUpdate(function () {
+                })
+                .onComplete(function () {
+                  clearPointCloud();
+                });
+
+          var tweenData02_d = new TWEEN.Tween()
+                   .delay(35000)
+                   .onUpdate(function () {
+                   })
+                   .onComplete(function () {
+                     soundData6.play();
+                     dataPoints02.mulRangeStart02 = 1;
+                     dataPoints02.mulRangeEnd02 = 50;
+
+                     generateData02(-1.32, 0.7, 6.01, THREE.Math.randFloat(-4, -0), 0.7, THREE.Math.randFloat(5, 9), true);// D1_a
+                     generateData02(-3.80, 0.7, 8.73, THREE.Math.randFloat(-4, -0), 0.7, THREE.Math.randFloat(5, 9), true);// D1_a
+                     generateData02(-4.0, 0.7, 6.04, THREE.Math.randFloat(-4, -0), 0.7, THREE.Math.randFloat(5, 9), true);// D1_a
+                     generateData02(-3.63, 0.7, 7.56, THREE.Math.randFloat(-4, -0), 0.7, THREE.Math.randFloat(5, 9), true);// D1_a
+                     generateData02(-2.03, 0.7, 7.63, THREE.Math.randFloat(-4, -0), 0.7, THREE.Math.randFloat(5, 9), true);// D1_a
+                     generateData02(-1.11, 0.7, 6.7,  THREE.Math.randFloat(-4, -0), 0.7, THREE.Math.randFloat(5, 9), true);// D1_a
+                     generateData02(-3.3, 0.7, 8.6, THREE.Math.randFloat(-4, -0), 0.7, THREE.Math.randFloat(5, 9), true);// D1_a
+										 if (b_firstTime) {
+                       addMeshMoveDown();
+                       b_firstTime = false;
+                     }
+                    });
+
+       var tweenreshowDataMesh = new TWEEN.Tween()
+               .delay(35000)
+               .onUpdate(function () {
+               })
+               .onComplete(function () {
+                 addMeshDataParticles();
+               });
+
+
+        tweenData01.start();
+        tweenClearA_01.start();
+
+        tweenData02.start();
+        tweenClearB_01.start();
+
+        tweenData02_a.start();
+        tweenClearA_02.start();
+
+        tweenData02_b.start();
+        tweenClearB_02.start();
+
+        tweenData02_c.start();
+        tweenClearA_03.start();
+
+        tweenData02_d.start();
+        tweenreshowDataMesh.start();
+}
+
+function tweenPercentages(){
+
+  var tweenData01 = new TWEEN.Tween()
+      .delay(3990)
+      .onUpdate(function () {
+
+      })
+      .onComplete(function () {
+        percentagesLoad.initPercentage_01(scene, -1.8, 0.82, 6.3, '52 %', 'percentages');
+        percentagesLoad.initPercentage_01(scene, -3.9, 0.82, 6.5, '12 %', 'percentages');
+        percentagesLoad.initPercentage_01(scene, -3.7, 0.82, 5.8, '16 %', 'percentages');
+        percentagesLoad.initPercentage_01(scene, -2.5, 0.82, 7.2, '7 %', 'percentages');
+        percentagesLoad.initPercentage_01(scene, -2.0, 0.82, 8.4, '5 %', 'percentages');
+        percentagesLoad.initPercentage_01(scene, -1.1, 0.82, 6.7, '2 %', 'percentages');
+        percentagesLoad.initPercentage_01(scene, -3.6, 0.82, 7.95, '6 %', 'percentages');
+    });
+
+    var tweenClearA_01 = new TWEEN.Tween()
+            .delay(9990)
+            .onUpdate(function () {
+            })
+            .onComplete(function () {
+              clearPercentages();
+
+            });
+
+      var tweenData02 = new TWEEN.Tween()
+          .delay(11000)
+          .onUpdate(function () {
+          })
+          .onComplete(function () {
+
+            percentagesLoad.initPercentage_01(scene, -3.95, 0.82, 6.64, '18 %', 'percentages');
+            percentagesLoad.initPercentage_01(scene, -0.64, 0.82, 5.69, '37 %', 'percentages');
+            percentagesLoad.initPercentage_01(scene, -1.82, 0.82, 4.03, '17 %', 'percentages');
+            percentagesLoad.initPercentage_01(scene, -3.22, 0.82, 4.9, '12 %', 'percentages');
+            percentagesLoad.initPercentage_01(scene, -3.37, 0.82, 8.16, '9 %', 'percentages');
+            percentagesLoad.initPercentage_01(scene, -2.15, 0.82, 7.44, '4 %', 'percentages');
+            percentagesLoad.initPercentage_01(scene, -2.01, 0.82, 5.9, '3 %', 'percentages');
+
+           });
+
+    var tweenClearB_01 = new TWEEN.Tween()
+                 .delay(15990)
+                 .onUpdate(function () {
+                 })
+                 .onComplete(function () {
+                   clearPercentages();
+            });
+
+      var tweenData02_a = new TWEEN.Tween()
+               .delay(18000)
+               .onUpdate(function () {
+               })
+               .onComplete(function () {
+
+                 percentagesLoad.initPercentage_01(scene, -0.3, 0.82, 8.8, '19 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -3.4, 0.82, 5.3, '25 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -1.7, 0.82, 7.9, '36 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -0.7, 0.82, 7.4, '2 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -2.2, 0.82, 5.2, '3 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -4.25, 0.82, 8.14, '4 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -3.4, 0.82, 6.4, '11 %', 'percentages');
+                });
+
+        var tweenClearA_02 = new TWEEN.Tween()
+                .delay(22990)
+                .onUpdate(function () {
+                })
+                .onComplete(function () {
+                  clearPercentages();
+                });
+
+      var tweenData02_b = new TWEEN.Tween()
+               .delay(25000)
+               .onUpdate(function () {
+               })
+               .onComplete(function () {
+
+                 percentagesLoad.initPercentage_01(scene, -2.96, 0.82, 8.17, '45 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -4.1, 0.82, 6.64, '11 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -2.48, 0.82, 5.06, '13 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -0.13, 0.82, 7.21, '10 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -1.25, 0.82, 7.64, '15 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -1.09, 0.82, 7.8, '4 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -3.3, 0.82, 8.5, '2 %', 'percentages');
+
+                });
+
+        var tweenClearB_02 = new TWEEN.Tween()
+                .delay(29990)
+                .onUpdate(function () {
+                })
+                .onComplete(function () {
+                  clearPercentages();
+                });
+
+      var tweenData02_c = new TWEEN.Tween()
+               .delay(32000)
+               .onUpdate(function () {
+               })
+               .onComplete(function () {
+
+                 percentagesLoad.initPercentage_01(scene, -1.32, 0.82, 5.9, '39 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -3.80, 0.82, 8.63, '3 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -4.0, 0.82, 5.96, '9 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -3.63, 0.82, 7.46, '23 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -2.03, 0.82, 7.53, '2 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -1.11, 0.82, 6.6, '13 %', 'percentages');
+                 percentagesLoad.initPercentage_01(scene, -3.3, 0.82, 8.5, '11 %', 'percentages');
+                });
+
+      var tweenClearA_03 = new TWEEN.Tween()
+              .delay(36990)
+              .onUpdate(function () {
+              })
+              .onComplete(function () {
+                clearPercentages();
+              });
+
+
+      tweenData01.start();
+      tweenClearA_01.start();
+
+      tweenData02.start();
+      tweenClearB_01.start();
+
+      tweenData02_a.start();
+      tweenClearA_02.start();
+
+      tweenData02_b.start();
+      tweenClearB_02.start();
+
+      tweenData02_c.start();
+      tweenClearA_03.start();
+
+}
+
+function tweenCamBigPath01() {
+
+          var to = {
+                  x : -4,
+                  y : 0.9,
+                  z : 7.5
+              };
+          var to4 = {//2
+              x: -0.1,
+              y: 0.9,
+              z: 7.4
+          };
+          var to5 = {//3
+              x: 1,
+              y: 0.9,
+              z: 5.3
+          };
+          var to6 = {//4
+              x: -2,
+              y: 0.9,
+              z: 5.5
+          };
+          var to7 = {//5
+              x: -6,
+              y: 1.8,
+              z: 9
+          };
+        var tweenBig03 = new TWEEN.Tween(to)
+            .to(to4,15000)
+            .easing(TWEEN.Easing.Quadratic.InOut)
+            .onUpdate(function () {
+              dolly.position.set(this.x, this.y, this.z);
+            })
+            .onComplete(function () {
+            });
+        var tweenBig04 = new TWEEN.Tween(to4)
+                .to(to5,10000)
+                .easing(TWEEN.Easing.Quadratic.InOut)
+                .onUpdate(function () {
+                  dolly.position.set(this.x, this.y, this.z);
+                })
+                .onComplete(function () {
+
+                });
+        var tweenBig05 = new TWEEN.Tween(to5)
+                .to(to6,10000)
+                .delay(25000)
+                .easing(TWEEN.Easing.Quadratic.InOut)
+                .onUpdate(function () {
+                  dolly.position.set(this.x, this.y, this.z);
+                })
+                .onComplete(function () {
+
+                });
+          var tweenBig06 = new TWEEN.Tween(to6)
+                  .to(to7,12000)
+                  .easing(TWEEN.Easing.Quadratic.InOut)
+                  .onUpdate(function () {
+                    dolly.position.set(this.x, this.y, this.z);
+                  })
+                  .onComplete(function () {
+                    addMeshMoveDown();
+                  });
+            tweenBig03.start();
+            tweenBig03.chain(tweenBig04);
+            tweenBig05.start();
+            tweenBig05.chain(tweenBig06);
+            Reticulum.remove( cube2 );
+            scene.remove( cube2 );
+}
+
+function tweenCam03() {
+
+      var to = {
+            x: -1.1,
+            y: 0.8,
+            z: 8.5
+          };
+      var to5 = {
+            x : -6,
+            y : 1.8,
+            z : 9
+              };
+    var tween05 = new TWEEN.Tween(to)
+        .to(to5,12000)
+        .easing(TWEEN.Easing.Exponential.Out)
+        .onUpdate(function () {
+          dolly.position.set(this.x, this.y, this.z);
+        })
+        .onComplete(function () {
+          addMeshMoveDown();
+        });
+        tween05.start();
+        Reticulum.remove( cube003 );
+        scene.remove( cube003 );
+}
+
+function tweenCam01() {
+
+            var to = {
+                  x : -6,
+                  y : 1.8,
+                  z : 9
+                };
+            var to2 = {
+                  x : -4,
+                  y : 0.8,
+                  z : 7.5
+                };
+
+          var tween02 = new TWEEN.Tween(to)
+              .to(to2,12000)
+              .easing(TWEEN.Easing.Exponential.Out)
+              .onUpdate(function () {
+                dolly.position.set(this.x, this.y, this.z);
+              })
+              .onComplete(function () {
+                addMeshMoveToOrbit();
+
+              });
+              tween02.start();
+              soundCam01.play();
+              Reticulum.remove( cube0 );
+              scene.remove( cube0 );
+}
+
+function tweenRingStart(){
+
+  var tweenRing = new TWEEN.Tween()
+          .delay(35130)
+          .onUpdate(function () {
+          })
+          .onComplete(function () {
+            addMeshStart();
+          });
+          tweenRing.start();
+}
+
+function planeInstractions(){
+
+
+  var geometryVideo = new THREE.PlaneGeometry(800, 600);
+  video.width = 640;
+  video.height = 480;
+  video.src = "video/lunaSynchYesSound08.mp4";
+  // to delete the video elements - not tried: videoElement.src =""; // empty source
+  video.setAttribute('crossorigin', 'anonymous');
+  //video.autoplay = true;
+  video.play();
+  video.loop = true;
+
+  textureVideo = new THREE.VideoTexture( video );
+  textureVideo.minFilter = THREE.LinearFilter;
+  textureVideo.format = THREE.RGBFormat;
+
+   var materialVideo = new THREE.MeshBasicMaterial({ map: textureVideo, side: THREE.DoubleSide, blending: THREE.MultiplyBlending, depthTest: false, transparent: true })
+
+     meshVideo = new THREE.Mesh( geometryVideo, materialVideo );
+    meshVideo.position.set( 1100, 150, -1100 );
+    meshVideo.rotation.set(0, -0.9, 0);
+
+
+    scene.add(meshVideo);
+}
+
+function clearPercentages(){
+      for (var j = 0; j < 37; j++) {
+                    for (var i = 0; i < scene.children.length; i++) {
+                        if (scene.children[i].name == "percentages") {
+                            scene.remove(scene.children[i]);
+                    }
+                }
+            }
+}
+function lightClick(){
+       light = new THREE.DirectionalLight( 0xffffff, 1 );
+       light.position.set( 1, 1, 1 );
+       scene.add( light );
+}
+
+
+function clearPointCloud(){
+      for (var j = 0; j < 14; j++) {
+                    for (var i = 0; i < scene.children.length; i++) {
+                        if (scene.children[i].name == "objAnimation") {
+                            scene.remove(scene.children[i]);
+                    }
+                }
+            }
+}
+
+function clearPointCloud02(){
+      for (var j = 0; j < 14; j++) {
+                    for (var i = 0; i < scene.children.length; i++) {
+                        if (scene.children[i].name == "objAnimation02") {
+                            scene.remove(scene.children[i]);
+                    }
+                }
+            }
+}
+function clearPointCloud04(){
+      for (var j = 0; j < 14; j++) {
+                    for (var i = 0; i < scene.children.length; i++) {
+                        if (scene.children[i].name == "objAnimation03") {
+                            scene.remove(scene.children[i]);
+                    }
+                }
+            }
+}
+
+
+// function handleKeyDown(event) {
+//             if (event.keyCode === 49) {
+//               //console.log("1 key is up");
+//               clearPointCloud04();
+//             }
+//             if (event.keyCode === 50) {
+//             }
+//             if (event.keyCode === 51) {
+//                   //console.log("3 key is up");
+//             }
+// }
+
+// function handleKeyUp(event) {
+//     if (event.keyCode === 66) {
+//       //console.log("b key is down");
+//     }
+// }
+
+// function render() {
+//
+//
+// }
+function animate () {
+
+	Reticulum.update();
+
+	camera.updateMatrixWorld(); // Required to stop ghosting - must be placed before render update
+  TWEEN.update();
+	controls.update();
+	effect.render( scene, camera );
+	effect.requestAnimationFrame( animate );
+	//requestAnimationFrame(setUpScene.animate);
+}
+
 
 			function onMouseDown() {
 
@@ -146,125 +1192,24 @@
 
 			}
 
-			function onPointerRestricted() {
-				var pointerLockElement = renderer.domElement;
-				if ( pointerLockElement && typeof(pointerLockElement.requestPointerLock) === 'function' ) {
-					pointerLockElement.requestPointerLock();
-
-				}
-			}
-
-			function onPointerUnrestricted() {
-				var currentPointerLockElement = document.pointerLockElement;
-				var expectedPointerLockElement = renderer.domElement;
-				if ( currentPointerLockElement && currentPointerLockElement === expectedPointerLockElement && typeof(document.exitPointerLock) === 'function' ) {
-					document.exitPointerLock();
-				}
-			}
-
 			function onWindowResize() {
 
 				camera.aspect = window.innerWidth / window.innerHeight;
 				camera.updateProjectionMatrix();
 
-				renderer.setSize( window.innerWidth, window.innerHeight );
+				effect.setSize( window.innerWidth, window.innerHeight );
 
 			}
 
-			//
 
-			function animate() {
 
-				renderer.animate( render );
+  // window.addEventListener('keydown', handleKeyDown, false);
+  // window.addEventListener('keyup', handleKeyUp, false);
+  // window.addEventListener( 'resize', onWindowResize, false );
+  // window.addEventListener( 'vrdisplaypresentchange', onWindowResize, true );
+//initScene.init();
+//initScene.animate();
 
-			}
-
-			function render() {
-
-				var delta = clock.getDelta() * 60;
-
-				if ( isMouseDown === true ) {
-
-					var cube = room.children[ 0 ];
-					room.remove( cube );
-
-					cube.position.set( 0, 0, - 0.75 );
-					cube.position.applyQuaternion( camera.quaternion );
-					cube.userData.velocity.x = ( Math.random() - 0.5 ) * 0.02 * delta;
-					cube.userData.velocity.y = ( Math.random() - 0.5 ) * 0.02 * delta;
-					cube.userData.velocity.z = ( Math.random() * 0.01 - 0.05 ) * delta;
-					cube.userData.velocity.applyQuaternion( camera.quaternion );
-					room.add( cube );
-
-				}
-
-				// find intersections
-
-				raycaster.setFromCamera( { x: 0, y: 0 }, camera );
-
-				var intersects = raycaster.intersectObjects( room.children );
-
-				if ( intersects.length > 0 ) {
-
-					if ( INTERSECTED != intersects[ 0 ].object ) {
-
-						if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-
-						INTERSECTED = intersects[ 0 ].object;
-						INTERSECTED.currentHex = INTERSECTED.material.emissive.getHex();
-						INTERSECTED.material.emissive.setHex( 0xff0000 );
-
-					}
-
-				} else {
-
-					if ( INTERSECTED ) INTERSECTED.material.emissive.setHex( INTERSECTED.currentHex );
-
-					INTERSECTED = undefined;
-
-				}
-
-				// Keep cubes inside room
-
-				for ( var i = 0; i < room.children.length; i ++ ) {
-
-					var cube = room.children[ i ];
-
-					cube.userData.velocity.multiplyScalar( 1 - ( 0.001 * delta ) );
-
-					cube.position.add( cube.userData.velocity );
-
-					if ( cube.position.x < - 3 || cube.position.x > 3 ) {
-
-						cube.position.x = THREE.Math.clamp( cube.position.x, - 3, 3 );
-						cube.userData.velocity.x = - cube.userData.velocity.x;
-
-					}
-
-					if ( cube.position.y < - 3 || cube.position.y > 3 ) {
-
-						cube.position.y = THREE.Math.clamp( cube.position.y, - 3, 3 );
-						cube.userData.velocity.y = - cube.userData.velocity.y;
-
-					}
-
-					if ( cube.position.z < - 3 || cube.position.z > 3 ) {
-
-						cube.position.z = THREE.Math.clamp( cube.position.z, - 3, 3 );
-						cube.userData.velocity.z = - cube.userData.velocity.z;
-
-					}
-
-					cube.rotation.x += cube.userData.velocity.x * 2 * delta;
-					cube.rotation.y += cube.userData.velocity.y * 2 * delta;
-					cube.rotation.z += cube.userData.velocity.z * 2 * delta;
-
-				}
-
-				renderer.render( scene, camera );
-
-			}
-
-		</script>
-	</body>
+</script>
+</body>
 </html>
